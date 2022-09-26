@@ -1,0 +1,259 @@
+{
+  "$schema": "https://vega.github.io/schema/vega/v5.json",
+  "background": "white",
+  "padding": 5,
+  "width": 500,
+  "height": 400,
+  "title": {
+    "text": "Top 10 Countries with Highest Total Deaths Caused By Tsunami",
+    "frame": "group"
+  },
+  "style": "cell",
+  "data": [
+    {"name": "continent_highlight_store"},
+    {
+      "name": "source_0",
+      "url": "https://raw.githubusercontent.com/JackWang8787/testing/main/data/tsunami%20historical%20data%20from%201800%20to%202021.csv",
+      "format": {"type": "csv", "delimiter": ","},
+      "transform": [
+        {
+          "type": "aggregate",
+          "groupby": ["Country"],
+          "ops": ["sum", "sum"],
+          "fields": ["Total Deaths", "Total Injuries"],
+          "as": ["Deaths", "Injuries"]
+        },
+        {
+          "type": "window",
+          "params": [null],
+          "as": ["rank"],
+          "ops": ["rank"],
+          "fields": [null],
+          "sort": {"field": ["Deaths"], "order": ["descending"]}
+        },
+        {"type": "filter", "expr": "datum.rank <= 10"},
+        {
+          "type": "filter",
+          "expr": "isValid(datum[\"Injuries\"]) && isFinite(+datum[\"Injuries\"]) && isValid(datum[\"Deaths\"]) && isFinite(+datum[\"Deaths\"])"
+        }
+      ]
+    }
+  ],
+  "signals": [
+    {
+      "name": "unit",
+      "value": {},
+      "on": [
+        {"events": "mousemove", "update": "isTuple(group()) ? group() : unit"}
+      ]
+    },
+    {
+      "name": "continent_highlight_Country_legend",
+      "value": null,
+      "on": [
+        {
+          "events": [
+            {
+              "source": "view",
+              "type": "click",
+              "markname": "Country_legend_symbols"
+            },
+            {
+              "source": "view",
+              "type": "click",
+              "markname": "Country_legend_labels"
+            },
+            {
+              "source": "view",
+              "type": "click",
+              "markname": "Country_legend_entries"
+            }
+          ],
+          "update": "datum.value || item().items[0].items[0].datum.value",
+          "force": true
+        },
+        {
+          "events": [{"source": "view", "type": "click"}],
+          "update": "!event.item || !datum ? null : continent_highlight_Country_legend",
+          "force": true
+        }
+      ]
+    },
+    {
+      "name": "continent_highlight",
+      "update": "vlSelectionResolve(\"continent_highlight_store\", \"union\", true, true)"
+    },
+    {
+      "name": "continent_highlight_tuple",
+      "update": "continent_highlight_Country_legend !== null ? {fields: continent_highlight_tuple_fields, values: [continent_highlight_Country_legend]} : null"
+    },
+    {
+      "name": "continent_highlight_tuple_fields",
+      "value": [{"type": "E", "field": "Country"}]
+    },
+    {
+      "name": "continent_highlight_toggle",
+      "value": false,
+      "on": [
+        {
+          "events": {"merge": [{"source": "view", "type": "click"}]},
+          "update": "event.shiftKey"
+        }
+      ]
+    },
+    {
+      "name": "continent_highlight_modify",
+      "on": [
+        {
+          "events": {"signal": "continent_highlight_tuple"},
+          "update": "modify(\"continent_highlight_store\", continent_highlight_toggle ? null : continent_highlight_tuple, continent_highlight_toggle ? null : true, continent_highlight_toggle ? continent_highlight_tuple : null)"
+        }
+      ]
+    }
+  ],
+  "marks": [
+    {
+      "name": "marks",
+      "type": "symbol",
+      "style": ["circle"],
+      "interactive": true,
+      "from": {"data": "source_0"},
+      "encode": {
+        "update": {
+          "opacity": [
+            {
+              "test": "!length(data(\"continent_highlight_store\")) || vlSelectionTest(\"continent_highlight_store\", datum)",
+              "value": 1
+            },
+            {"value": 0.2}
+          ],
+          "fill": {"scale": "color", "field": "Country"},
+          "tooltip": {
+            "signal": "{\"Country\": isValid(datum[\"Country\"]) ? datum[\"Country\"] : \"\"+datum[\"Country\"], \"Total Deaths\": format(datum[\"Deaths\"], \",\"), \"Total Injuries\": format(datum[\"Injuries\"], \",\")}"
+          },
+          "ariaRoleDescription": {"value": "circle"},
+          "description": {
+            "signal": "\"Number of Injuries: \" + (format(datum[\"Injuries\"], \"\")) + \"; Number of Deaths: \" + (format(datum[\"Deaths\"], \"\")) + \"; Country: \" + (isValid(datum[\"Country\"]) ? datum[\"Country\"] : \"\"+datum[\"Country\"]) + \"; Total Deaths: \" + (format(datum[\"Deaths\"], \",\")) + \"; Total Injuries: \" + (format(datum[\"Injuries\"], \",\"))"
+          },
+          "x": {"scale": "x", "field": "Injuries"},
+          "y": {"scale": "y", "field": "Deaths"},
+          "shape": {"value": "circle"}
+        }
+      }
+    }
+  ],
+  "scales": [
+    {
+      "name": "x",
+      "type": "linear",
+      "domain": {"data": "source_0", "field": "Injuries"},
+      "range": [0, {"signal": "width"}],
+      "nice": true,
+      "zero": true
+    },
+    {
+      "name": "y",
+      "type": "linear",
+      "domain": {"data": "source_0", "field": "Deaths"},
+      "range": [{"signal": "height"}, 0],
+      "nice": true,
+      "zero": true
+    },
+    {
+      "name": "color",
+      "type": "ordinal",
+      "domain": {"data": "source_0", "field": "Country", "sort": true},
+      "range": "category"
+    }
+  ],
+  "axes": [
+    {
+      "scale": "x",
+      "orient": "bottom",
+      "gridScale": "y",
+      "grid": true,
+      "tickCount": {"signal": "ceil(width/40)"},
+      "domain": false,
+      "labels": false,
+      "aria": false,
+      "maxExtent": 0,
+      "minExtent": 0,
+      "ticks": false,
+      "zindex": 0
+    },
+    {
+      "scale": "y",
+      "orient": "left",
+      "gridScale": "x",
+      "grid": true,
+      "tickCount": {"signal": "ceil(height/40)"},
+      "domain": false,
+      "labels": false,
+      "aria": false,
+      "maxExtent": 0,
+      "minExtent": 0,
+      "ticks": false,
+      "zindex": 0
+    },
+    {
+      "scale": "x",
+      "orient": "bottom",
+      "grid": false,
+      "title": "Number of Injuries",
+      "labelFlush": true,
+      "labelOverlap": true,
+      "tickCount": {"signal": "ceil(width/40)"},
+      "zindex": 0
+    },
+    {
+      "scale": "y",
+      "orient": "left",
+      "grid": false,
+      "title": "Number of Deaths",
+      "labelOverlap": true,
+      "tickCount": {"signal": "ceil(height/40)"},
+      "zindex": 0
+    }
+  ],
+  "legends": [
+    {
+      "fill": "color",
+      "symbolType": "circle",
+      "title": "Country",
+      "encode": {
+        "labels": {
+          "name": "Country_legend_labels",
+          "interactive": true,
+          "update": {
+            "opacity": [
+              {
+                "test": "(!length(data(\"continent_highlight_store\")) || (continent_highlight[\"Country\"] && indexof(continent_highlight[\"Country\"], datum.value) >= 0))",
+                "value": 1
+              },
+              {"value": 0.35}
+            ]
+          }
+        },
+        "symbols": {
+          "name": "Country_legend_symbols",
+          "interactive": true,
+          "update": {
+            "opacity": [
+              {
+                "test": "(!length(data(\"continent_highlight_store\")) || (continent_highlight[\"Country\"] && indexof(continent_highlight[\"Country\"], datum.value) >= 0))",
+                "value": 1
+              },
+              {"value": 0.35}
+            ]
+          }
+        },
+        "entries": {
+          "name": "Country_legend_entries",
+          "interactive": true,
+          "update": {"fill": {"value": "transparent"}}
+        }
+      }
+    }
+  ],
+  "config": {}
+}
