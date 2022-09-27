@@ -1,0 +1,139 @@
+{
+  "$schema": "https://vega.github.io/schema/vega/v5.json",
+  "background": "white",
+  "padding": 5,
+  "width": 800,
+  "height": 400,
+  "title": {
+    "text": "Top 10 Years of the Most Tsunami occured",
+    "frame": "group"
+  },
+  "style": "cell",
+  "data": [
+    {
+      "name": "source_0",
+      "url": "https://raw.githubusercontent.com/JackWang8787/testing/main/data/tsunami%20historical%20data%20from%201800%20to%202021.csv",
+      "format": {"type": "csv", "delimiter": ","},
+      "transform": [
+        {
+          "type": "aggregate",
+          "groupby": ["Year"],
+          "ops": ["valid"],
+          "fields": ["Year"],
+          "as": ["Number of Tsunami occured"]
+        },
+        {
+          "type": "window",
+          "params": [null],
+          "as": ["rank"],
+          "ops": ["rank"],
+          "fields": [null],
+          "sort": {
+            "field": ["Number of Tsunami occured"],
+            "order": ["descending"]
+          }
+        },
+        {"type": "filter", "expr": "(datum.rank <= 10)"},
+        {
+          "type": "stack",
+          "groupby": ["Year"],
+          "field": "Number of Tsunami occured",
+          "sort": {"field": [], "order": []},
+          "as": [
+            "Number of Tsunami occured_start",
+            "Number of Tsunami occured_end"
+          ],
+          "offset": "zero"
+        },
+        {
+          "type": "filter",
+          "expr": "isValid(datum[\"Number of Tsunami occured\"]) && isFinite(+datum[\"Number of Tsunami occured\"])"
+        }
+      ]
+    }
+  ],
+  "marks": [
+    {
+      "name": "marks",
+      "type": "rect",
+      "style": ["bar"],
+      "from": {"data": "source_0"},
+      "encode": {
+        "update": {
+          "fill": {"value": "#4c78a8"},
+          "tooltip": {
+            "signal": "{\"Year\": isValid(datum[\"Year\"]) ? datum[\"Year\"] : \"\"+datum[\"Year\"], \"Number of Tsunami occured\": format(datum[\"Number of Tsunami occured\"], \"\")}"
+          },
+          "ariaRoleDescription": {"value": "bar"},
+          "description": {
+            "signal": "\"Year: \" + (isValid(datum[\"Year\"]) ? datum[\"Year\"] : \"\"+datum[\"Year\"]) + \"; Number of Tsunami occured: \" + (format(datum[\"Number of Tsunami occured\"], \"\"))"
+          },
+          "x": {"scale": "x", "field": "Year"},
+          "width": {"scale": "x", "band": 1},
+          "y": {"scale": "y", "field": "Number of Tsunami occured_end"},
+          "y2": {"scale": "y", "field": "Number of Tsunami occured_start"}
+        }
+      }
+    }
+  ],
+  "scales": [
+    {
+      "name": "x",
+      "type": "band",
+      "domain": {"data": "source_0", "field": "Year", "sort": true},
+      "range": [0, {"signal": "width"}],
+      "paddingInner": 0.1,
+      "paddingOuter": 0.05
+    },
+    {
+      "name": "y",
+      "type": "linear",
+      "domain": {
+        "data": "source_0",
+        "fields": [
+          "Number of Tsunami occured_start",
+          "Number of Tsunami occured_end"
+        ]
+      },
+      "range": [{"signal": "height"}, 0],
+      "nice": true,
+      "zero": true
+    }
+  ],
+  "axes": [
+    {
+      "scale": "y",
+      "orient": "left",
+      "gridScale": "x",
+      "grid": true,
+      "tickCount": {"signal": "ceil(height/40)"},
+      "domain": false,
+      "labels": false,
+      "aria": false,
+      "maxExtent": 0,
+      "minExtent": 0,
+      "ticks": false,
+      "zindex": 0
+    },
+    {
+      "scale": "x",
+      "orient": "bottom",
+      "grid": false,
+      "title": "Year",
+      "labelAlign": "right",
+      "labelAngle": 270,
+      "labelBaseline": "middle",
+      "zindex": 0
+    },
+    {
+      "scale": "y",
+      "orient": "left",
+      "grid": false,
+      "title": "Number of Tsunami occured",
+      "labelOverlap": true,
+      "tickCount": {"signal": "ceil(height/40)"},
+      "zindex": 0
+    }
+  ],
+  "config": {}
+}
