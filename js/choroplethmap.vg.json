@@ -1,0 +1,282 @@
+{
+  "$schema": "https://vega.github.io/schema/vega/v5.json",
+  "background": "white",
+  "padding": 5,
+  "width": 800,
+  "height": 400,
+  "title": {
+    "text": "The Number of Tsunami occured and their Causes By Country",
+    "frame": "group"
+  },
+  "data": [
+    {"name": "continent_highlight_store"},
+    {
+      "name": "source_0",
+      "url": "https://raw.githubusercontent.com/FIT3179/Vega-Lite/main/7_others/oceans.topojson",
+      "format": {"type": "topojson", "feature": "oceans"}
+    },
+    {
+      "name": "source_2",
+      "url": "https://raw.githubusercontent.com/JackWang8787/testing/main/tsunami%20historical%20data%20from%201800%20to%202021.csv",
+      "format": {"type": "csv", "delimiter": ","}
+    },
+    {
+      "name": "source_1",
+      "url": "https://raw.githubusercontent.com/JackWang8787/testing/main/js/ne_110m_admin_0_countries.json",
+      "format": {
+        "type": "topojson",
+        "feature": "ne_110m_admin_0_countries",
+        "parse": {}
+      },
+      "transform": [
+        {
+          "type": "formula",
+          "expr": "datum[\"properties\"] && datum[\"properties\"][\"NAME\"]",
+          "as": "properties.NAME"
+        },
+        {
+          "type": "lookup",
+          "from": "source_2",
+          "key": "Country",
+          "fields": ["properties.NAME"],
+          "values": [
+            "Occurences",
+            "Tsunami Cause Code",
+            "Longitude",
+            "Latitude"
+          ]
+        },
+        {
+          "type": "filter",
+          "expr": "isValid(datum[\"Occurences\"]) && isFinite(+datum[\"Occurences\"])"
+        }
+      ]
+    },
+    {
+      "name": "data_0",
+      "source": "source_2",
+      "transform": [
+        {
+          "type": "geojson",
+          "fields": ["Longitude", "Latitude"],
+          "signal": "layer_2_geojson_0"
+        },
+        {
+          "type": "geopoint",
+          "projection": "projection",
+          "fields": ["Longitude", "Latitude"],
+          "as": ["layer_2_x", "layer_2_y"]
+        }
+      ]
+    }
+  ],
+  "projections": [
+    {
+      "name": "projection",
+      "size": {"signal": "[width, height]"},
+      "fit": {
+        "signal": "[data('source_0'), data('source_1'), layer_2_geojson_0]"
+      },
+      "type": "equalEarth"
+    }
+  ],
+  "signals": [
+    {
+      "name": "unit",
+      "value": {},
+      "on": [
+        {"events": "mousemove", "update": "isTuple(group()) ? group() : unit"}
+      ]
+    },
+    {
+      "name": "continent_highlight_Tsunami_Cause_Code_legend",
+      "value": null,
+      "on": [
+        {
+          "events": [
+            {
+              "source": "view",
+              "type": "click",
+              "markname": "Tsunami_Cause_Code_legend_symbols"
+            },
+            {
+              "source": "view",
+              "type": "click",
+              "markname": "Tsunami_Cause_Code_legend_labels"
+            },
+            {
+              "source": "view",
+              "type": "click",
+              "markname": "Tsunami_Cause_Code_legend_entries"
+            }
+          ],
+          "update": "datum.value || item().items[0].items[0].datum.value",
+          "force": true
+        },
+        {
+          "events": [{"source": "view", "type": "click"}],
+          "update": "!event.item || !datum ? null : continent_highlight_Tsunami_Cause_Code_legend",
+          "force": true
+        }
+      ]
+    },
+    {
+      "name": "continent_highlight",
+      "update": "vlSelectionResolve(\"continent_highlight_store\", \"union\", true, true)"
+    },
+    {
+      "name": "continent_highlight_tuple",
+      "update": "continent_highlight_Tsunami_Cause_Code_legend !== null ? {fields: continent_highlight_tuple_fields, values: [continent_highlight_Tsunami_Cause_Code_legend]} : null"
+    },
+    {
+      "name": "continent_highlight_tuple_fields",
+      "value": [{"type": "E", "field": "Tsunami Cause Code"}]
+    },
+    {
+      "name": "continent_highlight_toggle",
+      "value": false,
+      "on": [
+        {
+          "events": {"merge": [{"source": "view", "type": "click"}]},
+          "update": "event.shiftKey"
+        }
+      ]
+    },
+    {
+      "name": "continent_highlight_modify",
+      "on": [
+        {
+          "events": {"signal": "continent_highlight_tuple"},
+          "update": "modify(\"continent_highlight_store\", continent_highlight_toggle ? null : continent_highlight_tuple, continent_highlight_toggle ? null : true, continent_highlight_toggle ? continent_highlight_tuple : null)"
+        }
+      ]
+    }
+  ],
+  "marks": [
+    {
+      "name": "layer_0_marks",
+      "type": "shape",
+      "style": ["geoshape"],
+      "interactive": false,
+      "from": {"data": "source_0"},
+      "encode": {
+        "update": {
+          "fill": {"value": "skyblue"},
+          "ariaRoleDescription": {"value": "geoshape"}
+        }
+      },
+      "transform": [{"type": "geoshape", "projection": "projection"}]
+    },
+    {
+      "name": "layer_1_marks",
+      "type": "shape",
+      "style": ["geoshape"],
+      "interactive": true,
+      "from": {"data": "source_1"},
+      "encode": {
+        "update": {
+          "fill": {"scale": "layer_1_color", "field": "Occurences"},
+          "tooltip": {
+            "signal": "{\"Country\": isValid(datum[\"properties.NAME\"]) ? datum[\"properties.NAME\"] : \"\"+datum[\"properties.NAME\"], \"Number of Tsunami occured\": format(datum[\"Occurences\"], \"\")}"
+          },
+          "ariaRoleDescription": {"value": "geoshape"},
+          "description": {
+            "signal": "\"Number of Tsunami occured: \" + (format(datum[\"Occurences\"], \"\")) + \"; Country: \" + (isValid(datum[\"properties.NAME\"]) ? datum[\"properties.NAME\"] : \"\"+datum[\"properties.NAME\"])"
+          }
+        }
+      },
+      "transform": [{"type": "geoshape", "projection": "projection"}]
+    },
+    {
+      "name": "layer_2_marks",
+      "type": "symbol",
+      "style": ["circle"],
+      "interactive": true,
+      "from": {"data": "data_0"},
+      "encode": {
+        "update": {
+          "opacity": [
+            {
+              "test": "!length(data(\"continent_highlight_store\")) || vlSelectionTest(\"continent_highlight_store\", datum)",
+              "value": 1
+            },
+            {"value": 0}
+          ],
+          "fill": {"scale": "layer_2_color", "field": "Tsunami Cause Code"},
+          "tooltip": {
+            "signal": "{\"Country\": isValid(datum[\"Country\"]) ? datum[\"Country\"] : \"\"+datum[\"Country\"], \"Longitude\": format(datum[\"Longitude\"], \"\"), \"Latitude\": format(datum[\"Latitude\"], \"\"), \"Tsunami Cause Code\": isValid(datum[\"Tsunami Cause Code\"]) ? datum[\"Tsunami Cause Code\"] : \"\"+datum[\"Tsunami Cause Code\"]}"
+          },
+          "ariaRoleDescription": {"value": "circle"},
+          "description": {
+            "signal": "\"Longitude: \" + (format(datum[\"Longitude\"], \"\")) + \"; Latitude: \" + (format(datum[\"Latitude\"], \"\")) + \"; Tsunami Cause Code: \" + (isValid(datum[\"Tsunami Cause Code\"]) ? datum[\"Tsunami Cause Code\"] : \"\"+datum[\"Tsunami Cause Code\"]) + \"; Country: \" + (isValid(datum[\"Country\"]) ? datum[\"Country\"] : \"\"+datum[\"Country\"])"
+          },
+          "x": {"field": "layer_2_x"},
+          "y": {"field": "layer_2_y"},
+          "shape": {"value": "circle"}
+        }
+      }
+    }
+  ],
+  "scales": [
+    {
+      "name": "layer_1_color",
+      "type": "threshold",
+      "domain": [50, 100, 150],
+      "range": ["#fdbe85", "#fd8d3c", "#e6550d", "#a63603"],
+      "interpolate": "hcl"
+    },
+    {
+      "name": "layer_2_color",
+      "type": "ordinal",
+      "domain": {"data": "data_0", "field": "Tsunami Cause Code", "sort": true},
+      "range": {"scheme": "category20b"}
+    }
+  ],
+  "legends": [
+    {
+      "title": "Number of Tsunami occured",
+      "fill": "layer_1_color",
+      "labelOverlap": "greedy",
+      "symbolType": "circle"
+    },
+    {
+      "fill": "layer_2_color",
+      "symbolType": "circle",
+      "title": "Tsunami Cause Code",
+      "encode": {
+        "labels": {
+          "name": "Tsunami_Cause_Code_legend_labels",
+          "interactive": true,
+          "update": {
+            "opacity": [
+              {
+                "test": "(!length(data(\"continent_highlight_store\")) || (continent_highlight[\"Tsunami Cause Code\"] && indexof(continent_highlight[\"Tsunami Cause Code\"], datum.value) >= 0))",
+                "value": 1
+              },
+              {"value": 0.35}
+            ]
+          }
+        },
+        "symbols": {
+          "name": "Tsunami_Cause_Code_legend_symbols",
+          "interactive": true,
+          "update": {
+            "opacity": [
+              {
+                "test": "(!length(data(\"continent_highlight_store\")) || (continent_highlight[\"Tsunami Cause Code\"] && indexof(continent_highlight[\"Tsunami Cause Code\"], datum.value) >= 0))",
+                "value": 1
+              },
+              {"value": 0.35}
+            ]
+          }
+        },
+        "entries": {
+          "name": "Tsunami_Cause_Code_legend_entries",
+          "interactive": true,
+          "update": {"fill": {"value": "transparent"}}
+        }
+      }
+    }
+  ],
+  "config": {}
+}
